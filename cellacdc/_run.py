@@ -477,7 +477,14 @@ def _setup_app(splashscreen=False, icon_path=None, logo_path=None, scheme=None):
     if logo_path is None:
         logo_path = os.path.join(resources_folderpath, 'logo_v2.png')
     
-    from qtpy import QtWidgets, QtGui
+    from qtpy import QtWidgets, QtGui, QtCore
+    try:
+        from qtpy.QtMultimedia import QMediaPlayer as _SplashSoundClass
+    except ImportError:
+        try:
+            from qtpy.QtMultimedia import QSoundEffect as _SplashSoundClass
+        except ImportError:
+            _SplashSoundClass = None
 
     splashScreen = None
     if splashscreen:
@@ -504,7 +511,25 @@ def _setup_app(splashscreen=False, icon_path=None, logo_path=None, scheme=None):
         
         # Launch splashscreen
         splashScreen = SplashScreen(logo_path, icon_path)
-        splashScreen.show()  
+        splashScreen.show()
+        QtWidgets.QApplication.processEvents()
+        if _SplashSoundClass is not None:
+            try:
+                audio_path = os.path.join(resources_folderpath, 'intro.wav')
+                if os.path.exists(audio_path):
+                    if _SplashSoundClass.__name__ == 'QMediaPlayer':
+                        from qtpy.QtMultimedia import QMediaContent
+                        splashScreen._player = _SplashSoundClass()
+                        splashScreen._player.setMedia(QMediaContent(QtCore.QUrl.fromLocalFile(audio_path)))
+                        splashScreen._player.setVolume(100)
+                        splashScreen._player.play()
+                    else:
+                        splashScreen._sound = _SplashSoundClass()
+                        splashScreen._sound.setSource(QtCore.QUrl.fromLocalFile(audio_path))
+                        splashScreen._sound.setVolume(1.0)
+                        splashScreen._sound.play()
+            except Exception:
+                pass  
     
     from ._palettes import getPaletteColorScheme, setToolTipStyleSheet
     from ._palettes import get_color_scheme

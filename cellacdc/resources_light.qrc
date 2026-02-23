@@ -4,6 +4,7 @@
     <file alias="icon.ico">resources/icon_v2.ico</file>
     <file alias="logo.svg">resources/logo_v2.svg</file>
     <file alias="logo.png">resources/logo_v2.png</file>
+    <file alias="intro.wav">resources/intro.wav</file>
     <file alias="AICS_logo.svg">resources/icons/AICS_logo.svg</file>
     <file alias="whitelist.svg">resources/icons/whitelist.svg</file>
     <file alias="backspace.svg">resources/icons/math/backspace.svg</file>
