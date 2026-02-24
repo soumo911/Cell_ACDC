@@ -513,23 +513,50 @@ def _setup_app(splashscreen=False, icon_path=None, logo_path=None, scheme=None):
         splashScreen = SplashScreen(logo_path, icon_path)
         splashScreen.show()
         QtWidgets.QApplication.processEvents()
+
         if _SplashSoundClass is not None:
-            try:
-                audio_path = os.path.join(resources_folderpath, 'intro.wav')
-                if os.path.exists(audio_path):
-                    if _SplashSoundClass.__name__ == 'QMediaPlayer':
-                        from qtpy.QtMultimedia import QMediaContent
+            audio_path = os.path.join(resources_folderpath, "intro.wav")
+
+            if os.path.exists(audio_path):
+                try:
+                    from qtpy import QtCore
+                    from qtpy.QtMultimedia import QMediaPlayer
+
+                    url = QtCore.QUrl.fromLocalFile(audio_path)
+
+                    if issubclass(_SplashSoundClass, QMediaPlayer):
+
                         splashScreen._player = _SplashSoundClass()
-                        splashScreen._player.setMedia(QMediaContent(QtCore.QUrl.fromLocalFile(audio_path)))
-                        splashScreen._player.setVolume(100)
+
+                        # Qt6 detection: QMediaPlayer has setAudioOutput
+                        if hasattr(splashScreen._player, "setAudioOutput"):
+                            from qtpy.QtMultimedia import QAudioOutput
+
+                            splashScreen._audio_output = QAudioOutput()
+                            splashScreen._audio_output.setVolume(1.0)  # 0.0–1.0
+                            splashScreen._player.setAudioOutput(
+                                splashScreen._audio_output
+                            )
+                            splashScreen._player.setSource(url)
+
+                        else:
+                            # Qt5
+                            from qtpy.QtMultimedia import QMediaContent
+
+                            splashScreen._player.setMedia(QMediaContent(url))
+                            splashScreen._player.setVolume(100)  # 0–100
+
                         splashScreen._player.play()
+
                     else:
                         splashScreen._sound = _SplashSoundClass()
-                        splashScreen._sound.setSource(QtCore.QUrl.fromLocalFile(audio_path))
-                        splashScreen._sound.setVolume(1.0)
+                        splashScreen._sound.setSource(url)
+                        splashScreen._sound.setVolume(1.0)  # always 0.0–1.0
                         splashScreen._sound.play()
-            except Exception:
-                pass  
+
+                except Exception:
+                    # Splash audio must never crash startup
+                    pass 
     
     from ._palettes import getPaletteColorScheme, setToolTipStyleSheet
     from ._palettes import get_color_scheme
